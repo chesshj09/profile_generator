@@ -195,6 +195,7 @@
         <option value="timeline">세로 연표 (작중 행적 형식)</option>
         <option value="categorylist">분류별 목록 (선물 / 영화·간식 형식)</option>
         <option value="tightlist">짧은 목록 (여담 형식)</option>
+        <option value="gallery">장소 사진 갤러리 (화살표로 넘기기)</option>
       </select>
       <button onclick="addSection()">+ 섹션 추가</button>
     </div>
@@ -220,7 +221,7 @@
 </div>
 
 <script>
-const SITE_PASSWORD = "0202"; // 이 값을 원하는 비밀번호로 바꿔주세요
+const SITE_PASSWORD = "여기에원하는비밀번호"; // 이 값을 원하는 비밀번호로 바꿔주세요
 
 function checkPw() {
   const val = document.getElementById('gatePw').value;
@@ -255,13 +256,16 @@ function defaultSectionData(type) {
       return { title: '', subs: [{ subtitle: '', items: [{ label: '', content: '' }] }] };
     case 'tightlist':
       return { title: '', items: [{ label: '', content: '' }] };
+    case 'gallery':
+      return { title: '', images: [{ url: '', caption: '' }], description: '', infoOn: false, infoItems: [{ label: '', content: '' }] };
   }
 }
 
 const typeLabel = {
   quote: '인용문 + 설명', personality: '굵은 항목명 + 설명 목록',
   relationship: '인물별 긴 설명', timeline: '세로 연표',
-  categorylist: '분류별 목록', tightlist: '짧은 목록'
+  categorylist: '분류별 목록', tightlist: '짧은 목록',
+  gallery: '장소 사진 갤러리 (화살표로 넘기기)'
 };
 
 function addSection() {
@@ -346,6 +350,24 @@ function sectionCardHTML(sec, i) {
     inner += `<div id="tight-${i}"></div>
       <div class="add-row"><button class="tiny" onclick="addTightItem(${i})">+ 줄 추가</button></div>`;
   }
+  if (sec.type === 'gallery') {
+    inner += `
+      <div id="gal-imgs-${i}"></div>
+      <div class="add-row"><button class="tiny" onclick="addGalImage(${i})">+ 사진 추가</button></div>
+      <div class="hint">사진이 2장 이상이면 자동으로 화살표·점 네비게이션이 생겨요. 1장이면 그냥 큰 사진 한 장만 보여요.</div>
+      <div class="field full" style="margin-top:12px;">
+        <label>설명 문단</label>
+        <textarea oninput="state.sections[${i}].data.description=this.value">${esc(sec.data.description)}</textarea>
+      </div>
+      <div class="row" style="align-items:center;margin-top:6px;">
+        <label class="inline" style="display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" ${sec.data.infoOn ? 'checked' : ''} onchange="state.sections[${i}].data.infoOn=this.checked; renderSections()">
+          위치/특징/분위기 같은 정보 항목 추가하기
+        </label>
+      </div>
+      <div id="gal-info-${i}"></div>
+    `;
+  }
 
   return inner;
 }
@@ -359,6 +381,7 @@ function afterRenderNested() {
     if (sec.type === 'timeline') renderTimeline(i);
     if (sec.type === 'categorylist') renderCat(i);
     if (sec.type === 'tightlist') renderTight(i);
+    if (sec.type === 'gallery') renderGallery(i);
   });
 }
 
@@ -479,6 +502,46 @@ function renderTight(i) {
 }
 function addTightItem(i) { state.sections[i].data.items.push({ label: '', content: '' }); renderSections(); }
 function removeTightItem(i, j) { state.sections[i].data.items.splice(j, 1); renderSections(); }
+
+function renderGallery(i) {
+  const imgEl = document.getElementById(`gal-imgs-${i}`);
+  if (imgEl) {
+    imgEl.innerHTML = state.sections[i].data.images.map((img, j) => `
+      <div class="item-block">
+        <label>사진 ${j + 1} URL</label>
+        <input type="url" value="${esc(img.url)}" oninput="state.sections[${i}].data.images[${j}].url=this.value" placeholder="https://...">
+        <label style="margin-top:6px;">캡션 (예: 숲 전경)</label>
+        <input type="text" value="${esc(img.caption)}" oninput="state.sections[${i}].data.images[${j}].caption=this.value">
+        <div class="add-row"><button class="tiny danger" onclick="removeGalImage(${i},${j})">이 사진 삭제</button></div>
+      </div>
+    `).join('');
+  }
+  const infoEl = document.getElementById(`gal-info-${i}`);
+  if (infoEl) {
+    if (state.sections[i].data.infoOn) {
+      infoEl.innerHTML = `
+        <div class="sub-block">
+          ${state.sections[i].data.infoItems.map((it, j) => `
+            <div class="item-block">
+              <label>라벨 (예: 위치, 특징, 분위기)</label>
+              <input type="text" value="${esc(it.label)}" oninput="state.sections[${i}].data.infoItems[${j}].label=this.value">
+              <label style="margin-top:6px;">내용</label>
+              <input type="text" value="${esc(it.content)}" oninput="state.sections[${i}].data.infoItems[${j}].content=this.value">
+              <div class="add-row"><button class="tiny danger" onclick="removeGalInfo(${i},${j})">이 항목 삭제</button></div>
+            </div>
+          `).join('')}
+          <div class="add-row"><button class="tiny secondary" onclick="addGalInfo(${i})">+ 정보 항목 추가</button></div>
+        </div>
+      `;
+    } else {
+      infoEl.innerHTML = '';
+    }
+  }
+}
+function addGalImage(i) { state.sections[i].data.images.push({ url: '', caption: '' }); renderSections(); }
+function removeGalImage(i, j) { state.sections[i].data.images.splice(j, 1); if (state.sections[i].data.images.length === 0) state.sections[i].data.images.push({ url: '', caption: '' }); renderSections(); }
+function addGalInfo(i) { state.sections[i].data.infoItems.push({ label: '', content: '' }); renderSections(); }
+function removeGalInfo(i, j) { state.sections[i].data.infoItems.splice(j, 1); renderSections(); }
 
 function esc(s) { return (s || '').replace(/"/g, '&quot;'); }
 
@@ -664,6 +727,67 @@ ${buildHeading(sec, i)}
 `;
 }
 
+function buildGallerySection(sec, i) {
+  const gid = 'loc' + i;
+  const imgs = sec.data.images.filter(im => im.url);
+  const n = imgs.length || 1;
+  const imgsSafe = imgs.length ? imgs : [{ url: '', caption: '' }];
+
+  const radios = imgsSafe.map((img, k) =>
+    `<input type="radio" name="${gid}" id="${gid}-r${k + 1}" class="location-radio"${k === 0 ? ' checked' : ''}>`
+  ).join('\n    ');
+
+  const perSlideCSS = n > 1 ? imgsSafe.map((img, k) =>
+    `#${gid}-r${k + 1}:checked ~ .location-gallery .location-slide-${k + 1} { display: block; }\n#${gid}-r${k + 1}:checked ~ .location-dots .location-dot-${k + 1} { background: #E25A86; }`
+  ).join('\n') : `.location-slide-1 { display: block; }`;
+
+  const slides = imgsSafe.map((img, k) => {
+    const prev = k === 0 ? n : k;
+    const next = k === n - 1 ? 1 : k + 2;
+    const arrows = n > 1 ? `
+        <label for="${gid}-r${prev}" class="location-arrow prev">&#8249;</label>
+        <label for="${gid}-r${next}" class="location-arrow next">&#8250;</label>` : '';
+    const caption = img.caption ? `<p class="location-slide-caption">${img.caption}</p>` : '';
+    return `
+      <div class="location-slide location-slide-${k + 1}">
+        <img src="${img.url}" alt="${img.caption || sec.data.title || ''}">
+        ${caption}${arrows}
+      </div>`;
+  }).join('');
+
+  const dots = n > 1 ? `
+    <div class="location-dots">
+      ${imgsSafe.map((img, k) => `<label for="${gid}-r${k + 1}" class="location-dot location-dot-${k + 1}"></label>`).join('')}
+    </div>` : '';
+
+  const desc = sec.data.description ? `<p class="location-desc">${sec.data.description}</p>` : '';
+
+  const info = sec.data.infoOn && sec.data.infoItems.length ? `
+    <div class="location-info">
+      ${sec.data.infoItems.map(it => `
+      <div class="location-info-row">
+        <strong class="location-info-label">${it.label}</strong>
+        <span class="location-info-content">${it.content}</span>
+      </div>`).join('')}
+    </div>` : '';
+
+  return `
+<div class="character-setting-wrap">
+  <section class="setting-section">
+${buildHeading(sec, i)}
+    <div class="location-card">
+      ${radios}
+      <div class="location-gallery">
+        <style>
+${perSlideCSS}
+        </style>${slides}
+      </div>${dots}${desc}${info}
+    </div>
+  </section>
+</div>
+`;
+}
+
 function generateCode() {
   const mode = document.querySelector('input[name=mode]:checked').value;
   const dividerOn = document.getElementById('dividerOn').checked;
@@ -693,6 +817,7 @@ function generateCode() {
     else if (sec.type === 'timeline') body += buildTimelineSection(sec, i);
     else if (sec.type === 'categorylist') body += buildCategoryListSection(sec, i, 'category-list-section');
     else if (sec.type === 'tightlist') body += buildTightListSection(sec, i, 'tight-list-section');
+    else if (sec.type === 'gallery') body += buildGallerySection(sec, i);
   });
 
   const code = `<!-- ==================================================
@@ -926,6 +1051,50 @@ ${toc}
 .character-setting-wrap.tight-list-section .personality-detail-list > li + li,
 .character-setting-wrap.category-list-section .personality-detail-list > li + li {
   margin-top: 4px;
+}
+
+/* =========================================
+   장소 사진 갤러리
+========================================= */
+.character-setting-wrap .location-card {
+  background: var(--quote-background);
+  border-radius: 14px;
+  padding: 20px;
+  margin: 0 0 26px;
+}
+.character-setting-wrap .location-radio { display: none; }
+.character-setting-wrap .location-gallery { position: relative; border-radius: 10px; overflow: hidden; }
+.character-setting-wrap .location-slide { display: none; width: 100%; aspect-ratio: 16 / 9; position: relative; }
+.character-setting-wrap .location-slide-1 { display: block; }
+.character-setting-wrap .location-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.character-setting-wrap .location-slide-caption {
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.6));
+  color: #ffffff; font-size: 12px; text-align: center; padding: 20px 10px 8px;
+}
+.character-setting-wrap .location-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(0,0,0,0.45); color: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer; text-decoration: none;
+}
+.character-setting-wrap .location-arrow.prev { left: 10px; }
+.character-setting-wrap .location-arrow.next { right: 10px; }
+.character-setting-wrap .location-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+.character-setting-wrap .location-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--quote-line); cursor: pointer; }
+.character-setting-wrap .location-desc {
+  margin: 18px 0 0; font-size: 0.94em; line-height: 1.82; color: var(--text-color);
+  word-break: keep-all; overflow-wrap: break-word;
+}
+.character-setting-wrap .location-info { margin-top: 18px; border-top: 1px solid var(--divider-color); padding-top: 16px; }
+.character-setting-wrap .location-info-row { display: flex; gap: 10px; margin-bottom: 12px; }
+.character-setting-wrap .location-info-row:last-child { margin-bottom: 0; }
+.character-setting-wrap .location-info-label { color: var(--text-color); font-size: 0.94em; white-space: nowrap; }
+.character-setting-wrap .location-info-content { color: var(--subtext-color); font-size: 0.94em; line-height: 1.82; word-break: keep-all; overflow-wrap: break-word; }
+@media screen and (max-width: 600px) {
+  .character-setting-wrap .location-card { padding: 16px; }
+  .character-setting-wrap .location-arrow { width: 28px; height: 28px; font-size: 14px; }
 }
 
 /* =========================================
