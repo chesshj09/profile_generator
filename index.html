@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캐릭터 프로필 코드 생성기</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    background: #f4f3f7;
+    color: #2b2b2b;
+    margin: 0;
+    padding: 24px;
+    line-height: 1.5;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #777; font-size: 13px; margin-bottom: 24px; }
+  .app { max-width: 880px; margin: 0 auto; }
+  .panel {
+    background: #fff;
+    border: 1px solid #e3e1ea;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .panel h2 {
+    font-size: 15px;
+    margin: 0 0 14px;
+    color: #423D52;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .field { flex: 1; min-width: 160px; }
+  .field.full { flex-basis: 100%; }
+  label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+  input[type=text], input[type=url], textarea, select {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid #d7d5df;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+  }
+  textarea { resize: vertical; min-height: 54px; }
+  .mode-row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .mode-row label.inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #333; margin: 0; }
+  .section-card {
+    border: 1px solid #e3e1ea;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+    background: #fafaff;
+  }
+  .section-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .section-card-head strong { font-size: 13px; color: #423D52; }
+  .item-block {
+    border-left: 3px solid #d8b6c8;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: #fff;
+    border-radius: 4px;
+  }
+  .sub-block {
+    border: 1px dashed #cfc9dd;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    background: #423D52;
+    color: #fff;
+  }
+  button.secondary { background: #e3e1ea; color: #423D52; }
+  button.danger { background: #f0d7de; color: #a3355a; }
+  button.tiny { padding: 3px 8px; font-size: 11px; }
+  .add-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .generate-bar { text-align: center; margin: 24px 0; }
+  .generate-bar button {
+    background: #E25A86;
+    padding: 12px 32px;
+    font-size: 15px;
+    border-radius: 8px;
+  }
+  #output {
+    width: 100%;
+    height: 320px;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #d7d5df;
+  }
+  .output-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .hint { font-size: 11.5px; color: #888; margin-top: 2px; }
+  select#sectionType { max-width: 220px; }
+
+  /* 비밀번호 게이트 */
+  #gate {
+    position: fixed; inset: 0; background: #423D52;
+    display: flex; align-items: center; justify-content: center; z-index: 999;
+  }
+  #gate .box {
+    background: #fff; padding: 32px 28px; border-radius: 12px; width: 300px; text-align: center;
+  }
+  #gate .box h2 { margin: 0 0 6px; font-size: 17px; color: #423D52; }
+  #gate .box p { font-size: 12.5px; color: #888; margin: 0 0 16px; }
+  #gate input { width: 100%; padding: 9px 10px; border: 1px solid #d7d5df; border-radius: 6px; font-size: 14px; margin-bottom: 10px; }
+  #gate button { width: 100%; padding: 9px; background: #E25A86; border-radius: 6px; }
+  #gate .err { color: #c0355a; font-size: 12px; height: 16px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="box">
+    <h2>🔒 비밀번호 입력</h2>
+    <p>지인 한정으로 공유된 페이지예요.</p>
+    <input type="password" id="gatePw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()">입장하기</button>
+    <div class="err" id="gateErr"></div>
+  </div>
+</div>
+<div id="appWrap" style="display:none;">
+<div class="app">
+  <h1>캐릭터 프로필 코드 생성기</h1>
+  <div class="sub">내용만 채우면 지금까지 쓰던 것과 같은 구조의 티스토리 HTML 코드를 만들어드려요. 완성되면 아래 결과창에서 복사해서 티스토리 HTML 편집기에 붙여넣으세요.</div>
+
+  <!-- 기본 정보 -->
+  <div class="panel">
+    <h2>기본 정보 (오른쪽 프로필 표)</h2>
+    <div class="row">
+      <div class="field"><label>이름 (한글)</label><input type="text" id="p_nameKr" placeholder="에릴 로시에르"></div>
+      <div class="field"><label>이름 (영문)</label><input type="text" id="p_nameEn" placeholder="Eril Rosier"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>대표 이미지 URL</label><input type="url" id="p_mainImg" placeholder="https://..."></div>
+      <div class="field"><label>대표 이미지 캡션</label><input type="text" id="p_mainCaption" placeholder="두상 | ©작가님"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>전신 이미지 URL (선택)</label><input type="url" id="p_fullImg" placeholder="https://..."></div>
+      <div class="field"><label>전신 이미지 캡션</label><input type="text" id="p_fullCaption" placeholder="전신 | ©작가님"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>나이</label><input type="text" id="p_age" placeholder="만 23세"></div>
+      <div class="field"><label>성별</label><input type="text" id="p_gender" placeholder="여성"></div>
+      <div class="field"><label>신체</label><input type="text" id="p_body" placeholder="156cm, ..."></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>생일</label><input type="text" id="p_birthday" placeholder="가을의 23일 (9/23)"></div>
+      <div class="field"><label>주소</label><input type="text" id="p_address" placeholder="스타듀밸리 ..."></div>
+      <div class="field"><label>종족</label><input type="text" id="p_race" placeholder="인간"></div>
+      <div class="field"><label>직업</label><input type="text" id="p_job" placeholder="現 농장주"></div>
+    </div>
+    <div class="row">
+      <div class="field full">
+        <label>가족 (줄바꿈하고 싶은 곳에 &lt;br&gt; 을 직접 넣어주세요)</label>
+        <textarea id="p_family" placeholder="부모님&lt;br&gt;오빠: 에이든&lt;br&gt;&lt;br&gt;배우자: 백연"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모드 설정 -->
+  <div class="panel">
+    <h2>모드 / 구분선 설정</h2>
+    <div class="mode-row">
+      <label class="inline"><input type="radio" name="mode" value="dark" id="mode_dark" checked> 다크 모드</label>
+      <label class="inline"><input type="radio" name="mode" value="light" id="mode_light"> 라이트 모드</label>
+      <label class="inline"><input type="checkbox" id="dividerOn"> 제목 아래 구분선 추가</label>
+      <label class="inline">구분선 색상 <input type="text" id="dividerColor" value="#E25A86" style="width:90px"></label>
+    </div>
+    <div class="hint">다크 모드는 기본적으로 구분선 없이(스킨 원본 느낌), 라이트 모드는 기본적으로 구분선 있음으로 시작해요. 체크박스로 언제든 바꿀 수 있어요.</div>
+  </div>
+
+  <!-- 목차/섹션 -->
+  <div class="panel">
+    <h2>목차 항목 (섹션)</h2>
+    <div id="sectionsContainer"></div>
+    <div class="add-row">
+      <select id="sectionType">
+        <option value="quote">인용문 + 설명 (개요, 외관 형식)</option>
+        <option value="personality">굵은 항목명 + 설명 목록 (성격 형식)</option>
+        <option value="relationship">인물별 긴 설명 (인물 관계 형식)</option>
+        <option value="timeline">세로 연표 (작중 행적 형식)</option>
+        <option value="categorylist">분류별 목록 (선물 / 영화·간식 형식)</option>
+        <option value="tightlist">짧은 목록 (여담 형식)</option>
+      </select>
+      <button onclick="addSection()">+ 섹션 추가</button>
+    </div>
+  </div>
+
+  <div class="generate-bar">
+    <button onclick="generateCode()">코드 생성하기</button>
+    <div style="margin-top:10px; font-size:12px; color:#888;">
+      <span id="autosaveStatus">자동 저장됨</span>
+      &nbsp;·&nbsp;
+      <a href="#" onclick="resetStorage();return false;" style="color:#a3355a;">저장된 내용 초기화</a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="output-actions">
+      <h2 style="border:0; margin:0;">결과 코드</h2>
+      <button class="secondary" onclick="copyOutput()">복사하기</button>
+    </div>
+    <textarea id="output" readonly placeholder="위에서 '코드 생성하기'를 누르면 여기에 결과가 나와요."></textarea>
+  </div>
+</div>
+</div>
+
+<script>
+const SITE_PASSWORD = "0202"; // 이 값을 원하는 비밀번호로 바꿔주세요
+
+function checkPw() {
+  const val = document.getElementById('gatePw').value;
+  if (val === SITE_PASSWORD) {
+    sessionStorage.setItem('gateOk', '1');
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('appWrap').style.display = 'block';
+  } else {
+    document.getElementById('gateErr').textContent = '비밀번호가 틀렸어요.';
+  }
+}
+if (sessionStorage.getItem('gateOk') === '1') {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'block';
+}
+
+let state = { sections: [] };
+
+function uid() { return Math.random().toString(36).slice(2, 8); }
+
+function defaultSectionData(type) {
+  switch (type) {
+    case 'quote':
+      return { title: '', quote: '', paragraphs: [''] };
+    case 'personality':
+      return { title: '', items: [{ title: '', content: '' }] };
+    case 'relationship':
+      return { title: '', items: [{ title: '', paragraphs: [''] }] };
+    case 'timeline':
+      return { title: '', events: [{ year: '', label: '', summary: '', content: '' }] };
+    case 'categorylist':
+      return { title: '', subs: [{ subtitle: '', items: [{ label: '', content: '' }] }] };
+    case 'tightlist':
+      return { title: '', items: [{ label: '', content: '' }] };
+  }
+}
+
+const typeLabel = {
+  quote: '인용문 + 설명', personality: '굵은 항목명 + 설명 목록',
+  relationship: '인물별 긴 설명', timeline: '세로 연표',
+  categorylist: '분류별 목록', tightlist: '짧은 목록'
+};
+
+function addSection() {
+  const type = document.getElementById('sectionType').value;
+  state.sections.push({ id: uid(), type, anchor: '', data: defaultSectionData(type) });
+  renderSections();
+}
+function removeSection(i) { state.sections.splice(i, 1); renderSections(); }
+function moveSection(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= state.sections.length) return;
+  [state.sections[i], state.sections[j]] = [state.sections[j], state.sections[i]];
+  renderSections();
+}
+function changeType(i, newType) {
+  state.sections[i].type = newType;
+  state.sections[i].data = defaultSectionData(newType);
+  renderSections();
+}
+
+function renderSections() {
+  const c = document.getElementById('sectionsContainer');
+  c.innerHTML = '';
+  state.sections.forEach((sec, i) => {
+    const card = document.createElement('div');
+    card.className = 'section-card';
+    card.innerHTML = sectionCardHTML(sec, i);
+    c.appendChild(card);
+  });
+}
+
+function sectionCardHTML(sec, i) {
+  let inner = `
+    <div class="section-card-head">
+      <strong>${i + 1}. ${typeLabel[sec.type]}</strong>
+      <div>
+        <button class="tiny secondary" onclick="moveSection(${i},-1)">↑</button>
+        <button class="tiny secondary" onclick="moveSection(${i},1)">↓</button>
+        <button class="tiny danger" onclick="removeSection(${i})">삭제</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>섹션 제목 (예: 개요, 외관, 선물)</label>
+        <input type="text" value="${esc(sec.data.title)}" oninput="state.sections[${i}].data.title=this.value">
+      </div>
+      <div class="field">
+        <label>앵커 id (목차 이동용, 영문/숫자, 비우면 자동)</label>
+        <input type="text" value="${esc(sec.anchor)}" oninput="state.sections[${i}].anchor=this.value" placeholder="예: gift">
+      </div>
+    </div>
+  `;
+
+  if (sec.type === 'quote') {
+    inner += `
+      <div class="field full">
+        <label>인용문</label>
+        <textarea oninput="state.sections[${i}].data.quote=this.value">${esc(sec.data.quote)}</textarea>
+      </div>
+      <div id="paras-${i}"></div>
+      <div class="add-row"><button class="tiny" onclick="addPara(${i})">+ 설명 문단 추가</button></div>
+    `;
+  }
+  if (sec.type === 'personality') {
+    inner += `<div id="items-${i}"></div>
+      <div class="add-row"><button class="tiny" onclick="addItem(${i})">+ 항목 추가</button></div>`;
+  }
+  if (sec.type === 'relationship') {
+    inner += `<div id="rel-${i}"></div>
+      <div class="add-row"><button class="tiny" onclick="addRelItem(${i})">+ 인물 추가</button></div>`;
+  }
+  if (sec.type === 'timeline') {
+    inner += `<div id="tl-${i}"></div>
+      <div class="add-row"><button class="tiny" onclick="addEvent(${i})">+ 사건 추가</button></div>`;
+  }
+  if (sec.type === 'categorylist') {
+    inner += `<div id="cat-${i}"></div>
+      <div class="add-row"><button class="tiny" onclick="addSub(${i})">+ 그룹 추가 (예: 영화, 간식)</button></div>
+      <div class="hint">그룹 이름을 비워두면 소제목 없이 (선물 섹션처럼) 목록만 바로 나와요.</div>`;
+  }
+  if (sec.type === 'tightlist') {
+    inner += `<div id="tight-${i}"></div>
+      <div class="add-row"><button class="tiny" onclick="addTightItem(${i})">+ 줄 추가</button></div>`;
+  }
+
+  return inner;
+}
+
+// ---- helpers to render nested lists after the card's innerHTML is set ----
+function afterRenderNested() {
+  state.sections.forEach((sec, i) => {
+    if (sec.type === 'quote') renderParas(i);
+    if (sec.type === 'personality') renderItems(i);
+    if (sec.type === 'relationship') renderRel(i);
+    if (sec.type === 'timeline') renderTimeline(i);
+    if (sec.type === 'categorylist') renderCat(i);
+    if (sec.type === 'tightlist') renderTight(i);
+  });
+}
+
+function renderParas(i) {
+  const el = document.getElementById(`paras-${i}`);
+  if (!el) return;
+  el.innerHTML = state.sections[i].data.paragraphs.map((p, j) => `
+    <div class="item-block">
+      <label>설명 문단 ${j + 1}</label>
+      <textarea oninput="state.sections[${i}].data.paragraphs[${j}]=this.value">${esc(p)}</textarea>
+      <div class="add-row"><button class="tiny danger" onclick="removePara(${i},${j})">이 문단 삭제</button></div>
+    </div>
+  `).join('');
+}
+function addPara(i) { state.sections[i].data.paragraphs.push(''); renderSections(); }
+function removePara(i, j) { state.sections[i].data.paragraphs.splice(j, 1); renderSections(); }
+
+function renderItems(i) {
+  const el = document.getElementById(`items-${i}`);
+  if (!el) return;
+  el.innerHTML = state.sections[i].data.items.map((it, j) => `
+    <div class="item-block">
+      <label>굵은 항목명 (예: 대외적 성격:)</label>
+      <input type="text" value="${esc(it.title)}" oninput="state.sections[${i}].data.items[${j}].title=this.value">
+      <label style="margin-top:6px;">내용</label>
+      <textarea oninput="state.sections[${i}].data.items[${j}].content=this.value">${esc(it.content)}</textarea>
+      <div class="add-row"><button class="tiny danger" onclick="removeItem(${i},${j})">이 항목 삭제</button></div>
+    </div>
+  `).join('');
+}
+function addItem(i) { state.sections[i].data.items.push({ title: '', content: '' }); renderSections(); }
+function removeItem(i, j) { state.sections[i].data.items.splice(j, 1); renderSections(); }
+
+function renderRel(i) {
+  const el = document.getElementById(`rel-${i}`);
+  if (!el) return;
+  el.innerHTML = state.sections[i].data.items.map((it, j) => `
+    <div class="item-block">
+      <label>인물명 / 소제목</label>
+      <input type="text" value="${esc(it.title)}" oninput="state.sections[${i}].data.items[${j}].title=this.value">
+      ${it.paragraphs.map((p, k) => `
+        <label style="margin-top:6px;">설명 문단 ${k + 1}</label>
+        <textarea oninput="state.sections[${i}].data.items[${j}].paragraphs[${k}]=this.value">${esc(p)}</textarea>
+      `).join('')}
+      <div class="add-row">
+        <button class="tiny secondary" onclick="addRelPara(${i},${j})">+ 문단 추가</button>
+        <button class="tiny danger" onclick="removeRelItem(${i},${j})">이 인물 삭제</button>
+      </div>
+    </div>
+  `).join('');
+}
+function addRelItem(i) { state.sections[i].data.items.push({ title: '', paragraphs: [''] }); renderSections(); }
+function removeRelItem(i, j) { state.sections[i].data.items.splice(j, 1); renderSections(); }
+function addRelPara(i, j) { state.sections[i].data.items[j].paragraphs.push(''); renderSections(); }
+
+function renderTimeline(i) {
+  const el = document.getElementById(`tl-${i}`);
+  if (!el) return;
+  el.innerHTML = state.sections[i].data.events.map((ev, j) => `
+    <div class="item-block">
+      <div class="row">
+        <div class="field"><label>시기 (예: 스타듀밸리로 오기 전)</label>
+          <input type="text" value="${esc(ev.year)}" oninput="state.sections[${i}].data.events[${j}].year=this.value"></div>
+        <div class="field"><label>제목 (예: 과거)</label>
+          <input type="text" value="${esc(ev.label)}" oninput="state.sections[${i}].data.events[${j}].label=this.value"></div>
+      </div>
+      <label>한 줄 요약</label>
+      <input type="text" value="${esc(ev.summary)}" oninput="state.sections[${i}].data.events[${j}].summary=this.value">
+      <label style="margin-top:6px;">상세 내용</label>
+      <textarea oninput="state.sections[${i}].data.events[${j}].content=this.value">${esc(ev.content)}</textarea>
+      <div class="add-row"><button class="tiny danger" onclick="removeEvent(${i},${j})">이 사건 삭제</button></div>
+    </div>
+  `).join('');
+}
+function addEvent(i) { state.sections[i].data.events.push({ year: '', label: '', summary: '', content: '' }); renderSections(); }
+function removeEvent(i, j) { state.sections[i].data.events.splice(j, 1); renderSections(); }
+
+function renderCat(i) {
+  const el = document.getElementById(`cat-${i}`);
+  if (!el) return;
+  el.innerHTML = state.sections[i].data.subs.map((sub, j) => `
+    <div class="sub-block">
+      <label>그룹 이름 (선택, 예: 영화 / 간식 — 비워두면 소제목 없이 표시)</label>
+      <input type="text" value="${esc(sub.subtitle)}" oninput="state.sections[${i}].data.subs[${j}].subtitle=this.value">
+      ${sub.items.map((it, k) => `
+        <div class="item-block">
+          <label>라벨 (예: 사랑함:)</label>
+          <input type="text" value="${esc(it.label)}" oninput="state.sections[${i}].data.subs[${j}].items[${k}].label=this.value">
+          <label style="margin-top:6px;">내용 (쉼표로 나열)</label>
+          <input type="text" value="${esc(it.content)}" oninput="state.sections[${i}].data.subs[${j}].items[${k}].content=this.value">
+          <div class="add-row"><button class="tiny danger" onclick="removeCatItem(${i},${j},${k})">이 줄 삭제</button></div>
+        </div>
+      `).join('')}
+      <div class="add-row">
+        <button class="tiny secondary" onclick="addCatItem(${i},${j})">+ 줄 추가</button>
+        <button class="tiny danger" onclick="removeSub(${i},${j})">이 그룹 삭제</button>
+      </div>
+    </div>
+  `).join('');
+}
+function addSub(i) { state.sections[i].data.subs.push({ subtitle: '', items: [{ label: '', content: '' }] }); renderSections(); }
+function removeSub(i, j) { state.sections[i].data.subs.splice(j, 1); renderSections(); }
+function addCatItem(i, j) { state.sections[i].data.subs[j].items.push({ label: '', content: '' }); renderSections(); }
+function removeCatItem(i, j, k) { state.sections[i].data.subs[j].items.splice(k, 1); renderSections(); }
+
+function renderTight(i) {
+  const el = document.getElementById(`tight-${i}`);
+  if (!el) return;
+  el.innerHTML = state.sections[i].data.items.map((it, j) => `
+    <div class="item-block">
+      <label>굵게 표시할 라벨 (선택, 예: 페어 테마곡:)</label>
+      <input type="text" value="${esc(it.label)}" oninput="state.sections[${i}].data.items[${j}].label=this.value">
+      <label style="margin-top:6px;">내용</label>
+      <input type="text" value="${esc(it.content)}" oninput="state.sections[${i}].data.items[${j}].content=this.value">
+      <div class="add-row"><button class="tiny danger" onclick="removeTightItem(${i},${j})">이 줄 삭제</button></div>
+    </div>
+  `).join('');
+}
+function addTightItem(i) { state.sections[i].data.items.push({ label: '', content: '' }); renderSections(); }
+function removeTightItem(i, j) { state.sections[i].data.items.splice(j, 1); renderSections(); }
+
+function esc(s) { return (s || '').replace(/"/g, '&quot;'); }
+
+// override renderSections to also render nested lists + autosave each time
+const _origRenderSections = renderSections;
+renderSections = function () { _origRenderSections(); afterRenderNested(); saveToStorage(); };
+
+// -------------------- CODE GENERATION --------------------
+
+function slug(str, idx) {
+  const s = (str || '').toLowerCase().replace(/[^a-z0-9\-]/g, '').trim();
+  return s || ('section' + (idx + 1));
+}
+
+function getProfile() {
+  const v = id => document.getElementById(id).value;
+  return {
+    nameKr: v('p_nameKr'), nameEn: v('p_nameEn'),
+    mainImg: v('p_mainImg'), mainCaption: v('p_mainCaption'),
+    fullImg: v('p_fullImg'), fullCaption: v('p_fullCaption'),
+    age: v('p_age'), gender: v('p_gender'), body: v('p_body'),
+    birthday: v('p_birthday'), address: v('p_address'),
+    race: v('p_race'), job: v('p_job'), family: v('p_family')
+  };
+}
+
+const COLORS = {
+  dark: {
+    profileDark: '#423D52', profileDarkText: '#FFFFFF',
+    tocTitle: '#FFFFFF', tocBg: '#262430', tocBorder: '#55525f',
+    tableBg: '#322F3D', captionColor: '#ffffff', valueColor: '#FFFFFF',
+    quoteBg: '#35303F', quoteLine: '#B7B2CC', text: '#FFFFFF', subtext: '#FFFFFF',
+    title: '#FFFFFF', divider: '#44424f',
+    footBg: '#262430', footBorder: '#4a4a55', footShadow: 'rgba(0,0,0,0.35)', footText: '#FFFFFF',
+    tlLine: '#44424f', tlDot: '#a9a6b8', tlText: '#FFFFFF', tlSubtext: '#d5d3dd',
+    tlBox: '#35303F', tlBoxLine: '#B7B2CC', tlDotBg: '#262430', tlYear: '#b5b2c2', tlContent: '#EDEDF2'
+  },
+  light: {
+    profileDark: '#F5F5F5', profileDarkText: '#222222',
+    tocTitle: '#302829', tocBg: '#ffffff', tocBorder: '#cccccc',
+    tableBg: '#ffffff', captionColor: '#666666', valueColor: '#222222',
+    quoteBg: '#f5f5f5', quoteLine: '#5b5757', text: '#333333', subtext: '#666666',
+    title: '#333333', divider: '#dddddd',
+    footBg: '#ffffff', footBorder: '#d9d9d9', footShadow: 'rgba(0,0,0,0.12)', footText: '#444444',
+    tlLine: '#e5e5e5', tlDot: '#777', tlText: '#444', tlSubtext: '#777',
+    tlBox: '#f5f5f5', tlBoxLine: '#4b4241', tlDotBg: '#ffffff', tlYear: '#888', tlContent: '#555'
+  }
+};
+
+function buildTOC() {
+  return state.sections.map((sec, i) => {
+    const anchor = sec.anchor || slug(sec.data.title, i);
+    return `<p><a href="#${anchor}">${i + 1}. ${sec.data.title || ''}</a></p>`;
+  }).join('\n');
+}
+
+function buildHeading(sec, i) {
+  const anchor = sec.anchor || slug(sec.data.title, i);
+  return `<h2 id="${anchor}" class="dream-section">\n  <span class="section-number">${i + 1}.</span> ${sec.data.title || ''}\n</h2>`;
+}
+
+function buildQuoteSection(sec, i) {
+  const paras = sec.data.paragraphs.map(p => `\n    <br>\n    <p class="story-description">\n      ${p}\n    </p>`).join('');
+  return `
+<div class="character-setting-wrap">
+  <section class="setting-section">
+${buildHeading(sec, i)}
+    <blockquote class="story-quote">
+      <p>
+        ${sec.data.quote}
+      </p>
+    </blockquote>${paras}
+  </section>
+</div>
+`;
+}
+
+function buildPersonalitySection(sec, i) {
+  const items = sec.data.items.map(it => `
+    <li>
+      <strong class="personality-detail-title">${it.title}</strong>
+      ${it.content}
+    </li>`).join('');
+  return `
+<div class="character-setting-wrap">
+  <section class="setting-section character-personality-section">
+${buildHeading(sec, i)}
+  <ul class="personality-detail-list">${items}
+  </ul>
+  </section>
+</div>
+`;
+}
+
+function buildRelationshipSection(sec, i) {
+  const items = sec.data.items.map(it => {
+    const paras = it.paragraphs.map((p, k) => k === 0
+      ? `\n      <p>\n        ${p}\n      </p>`
+      : `\n      <br>\n      <p style="margin-top: 16px;">\n        ${p}\n      </p>`).join('');
+    return `
+    <li>
+      <strong class="personality-detail-title">
+        ${it.title}
+      </strong>${paras}
+    </li>`;
+  }).join('');
+  return `
+<div class="character-setting-wrap">
+  <section class="setting-section relationship-section">
+${buildHeading(sec, i)}
+  <ul class="personality-detail-list">${items}
+  </ul>
+  </section>
+</div>
+`;
+}
+
+function buildTimelineSection(sec, i) {
+  const anchor = sec.anchor || slug(sec.data.title, i);
+  const events = sec.data.events.map((ev, j) => `
+  <div class="my-tl-item">
+    <span class="my-tl-dot"></span>
+    <div class="my-tl-header">
+      <span class="my-tl-year">${ev.year}</span>
+      <span class="my-tl-title">${ev.label}</span>
+    </div>
+    <div class="my-tl-summary">${ev.summary}</div>
+    <div class="my-tl-content">${ev.content}</div>
+  </div>
+`).join('');
+  return `
+<h2 id="${anchor}" class="dream-section">
+  <span class="section-number">${i + 1}.</span> ${sec.data.title || ''}
+</h2>
+
+<div class="my-char-timeline">
+${events}
+</div>
+`;
+}
+
+function buildCategoryListSection(sec, i, extraClass) {
+  const subs = sec.data.subs.map(sub => {
+    const items = sub.items.map(it => `
+        <li>
+          <strong class="personality-detail-title">${it.label}</strong> ${it.content}
+        </li>`).join('');
+    if (sub.subtitle) {
+      return `
+    <div class="personality-subsection">
+      <p class="personality-subtitle">${sub.subtitle}</p>
+      <ul class="personality-detail-list">${items}
+      </ul>
+    </div>`;
+    }
+    return `
+    <ul class="personality-detail-list">${items}
+    </ul>`;
+  }).join('');
+  return `
+<div class="character-setting-wrap ${extraClass}">
+  <section class="setting-section">
+${buildHeading(sec, i)}
+${subs}
+  </section>
+</div>
+`;
+}
+
+function buildTightListSection(sec, i, extraClass) {
+  const items = sec.data.items.map(it => `
+      <li>
+        ${it.label ? `<strong>${it.label}</strong> ` : ''}${it.content}
+      </li>`).join('');
+  return `
+<div class="character-setting-wrap ${extraClass}">
+  <section class="setting-section ${extraClass}">
+${buildHeading(sec, i)}
+    <ul class="personality-detail-list">${items}
+    </ul>
+  </section>
+</div>
+`;
+}
+
+function generateCode() {
+  const mode = document.querySelector('input[name=mode]:checked').value;
+  const dividerOn = document.getElementById('dividerOn').checked;
+  const dividerColor = document.getElementById('dividerColor').value || '#E25A86';
+  const C = COLORS[mode];
+  const p = getProfile();
+
+  const dividerCSS = dividerOn ? `
+/* 제목 아래 구분선 */
+.dream-section {
+  border-bottom: 1px solid ${dividerColor} !important;
+}
+@media screen and (max-width: 760px) {
+  .dream-section {
+    border-bottom: 1px solid ${dividerColor} !important;
+  }
+}
+` : '';
+
+  const toc = buildTOC();
+
+  let body = '';
+  state.sections.forEach((sec, i) => {
+    if (sec.type === 'quote') body += buildQuoteSection(sec, i);
+    else if (sec.type === 'personality') body += buildPersonalitySection(sec, i);
+    else if (sec.type === 'relationship') body += buildRelationshipSection(sec, i);
+    else if (sec.type === 'timeline') body += buildTimelineSection(sec, i);
+    else if (sec.type === 'categorylist') body += buildCategoryListSection(sec, i, 'category-list-section');
+    else if (sec.type === 'tightlist') body += buildTightListSection(sec, i, 'tight-list-section');
+  });
+
+  const code = `<!-- ==================================================
+     프로필 영역 시작
+================================================== -->
+
+<style>
+.dream-wiki {
+  --profile-dark-color: ${C.profileDark};
+  --profile-dark-text-color: ${C.profileDarkText};
+  --toc-link-color: #0275d8;
+  --toc-title-color: ${C.tocTitle};
+  --toc-background-color: ${C.tocBg};
+  --toc-border-color: ${C.tocBorder};
+  font-size: 0.95em;
+  line-height: 1.7;
+}
+.dream-wiki .dream-infobox {
+  float: right;
+  width: 450px;
+  max-width: 50%;
+  margin: 0 0 24px 40px;
+  border: 1px solid var(--profile-dark-color);
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+  background: ${C.tableBg};
+}
+.dream-wiki .dream-infobox th,
+.dream-wiki .dream-infobox td {
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--profile-dark-color);
+  vertical-align: middle;
+}
+.dream-wiki .dream-infobox tr:last-child > th,
+.dream-wiki .dream-infobox tr:last-child > td { border-bottom: 0; }
+.dream-wiki .profile-main-title {
+  padding: 10px 12px !important;
+  background: var(--profile-dark-color);
+  color: var(--profile-dark-text-color);
+  text-align: center;
+}
+.dream-wiki .profile-main-title strong { display: block; font-size: calc(1.45em + 0px); line-height: 1.3; }
+.dream-wiki .profile-main-title span { display: block; margin-top: 3px; font-size: calc(0.95em + 2px); line-height: 1.3; font-weight: 700; }
+.dream-wiki .profile-image-cell { padding: 10px !important; background: ${C.tableBg}; text-align: center; }
+.dream-wiki .profile-image-cell img { display: block; width: 100%; max-width: 100%; height: auto; margin: 0 auto; }
+.dream-wiki .profile-caption { margin: 6px 0 0; font-size: 0.9em; text-align: center; color: ${C.captionColor}; }
+.dream-wiki .profile-wide-title { background: var(--profile-dark-color); color: var(--profile-dark-text-color); text-align: center; font-weight: 700; }
+.dream-wiki .profile-label {
+  background: var(--profile-dark-color);
+  color: var(--profile-dark-text-color);
+  text-align: center;
+  font-weight: 700;
+  border-right: 1px solid var(--profile-dark-color);
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.dream-wiki .profile-value { background: ${C.tableBg}; color: ${C.valueColor}; text-align: left; word-break: keep-all; overflow-wrap: break-word; }
+.dream-wiki .profile-fold-cell { padding: 0 !important; background: ${C.tableBg}; }
+.dream-wiki .profile-fold { margin: 0; padding: 0; }
+.dream-wiki .profile-fold > summary {
+  display: block; box-sizing: border-box; width: 100%; padding: 12px;
+  background: var(--profile-dark-color); color: var(--profile-dark-text-color);
+  text-align: center; font-weight: 700; font-size: 0.85em;
+  cursor: pointer; user-select: none; list-style: none;
+}
+.dream-wiki .profile-fold > summary::-webkit-details-marker { display: none; }
+.dream-wiki .profile-fold > summary::marker { display: none; content: ""; }
+.dream-wiki .profile-fullbody { padding: 10px; background: ${C.tableBg}; }
+.dream-wiki .profile-fullbody img { display: block; width: 100%; max-width: 100%; height: auto; margin: 0 auto; }
+.dream-wiki .profile-label,
+.dream-wiki .profile-value,
+.dream-wiki .profile-value * { font-size: 0.85em !important; }
+.dream-wiki .dream-toc {
+  display: inline-block; min-width: 150px; padding: 15px 22px; margin-bottom: 24px;
+  border: 1px solid var(--toc-border-color); background: var(--toc-background-color); box-sizing: border-box;
+}
+.dream-wiki .dream-toc > strong { display: block; margin-bottom: 10px; color: var(--toc-title-color); font-size: 1.35em; }
+.dream-wiki .dream-toc p { margin: 4px 0; }
+.dream-wiki .dream-toc a, .dream-wiki .dream-toc a:link, .dream-wiki .dream-toc a:visited,
+.dream-wiki .dream-toc a:hover, .dream-wiki .dream-toc a:active, .dream-wiki .dream-toc a:focus {
+  color: var(--toc-link-color) !important; font-style: normal !important; text-decoration: none !important;
+  border-bottom: 0 !important; box-shadow: none !important; background-image: none !important;
+}
+.dream-wiki-clear { clear: both; }
+.dream-section { scroll-margin-top: 30px; }
+@media screen and (max-width: 760px) {
+  .dream-wiki .dream-infobox { float: none; width: 100%; max-width: none; margin: 0 0 24px; }
+  .dream-wiki .dream-toc { width: 100%; margin-bottom: 24px; }
+}
+.dream-section::before, .dream-section::after { content: none !important; display: none !important; }
+.dream-section .section-number { color: #0275d8 !important; font-weight: inherit; }
+${dividerCSS}
+</style>
+
+<div class="dream-wiki">
+  <table class="dream-infobox">
+    <colgroup>
+      <col style="width: 35%;">
+      <col style="width: 65%;">
+    </colgroup>
+    <tbody>
+      <tr>
+        <th colspan="2" class="profile-main-title">
+          <strong>${p.nameKr}</strong>
+          <span>${p.nameEn}</span>
+        </th>
+      </tr>
+      <tr>
+        <td colspan="2" class="profile-image-cell">
+          <img src="${p.mainImg}" alt="${p.nameKr} 대표 이미지">
+          <p class="profile-caption">${p.mainCaption}</p>
+        </td>
+      </tr>
+      ${p.fullImg ? `<tr>
+        <td colspan="2" class="profile-fold-cell">
+          <details class="profile-fold">
+            <summary>[전신 외관 펼치기 / 접기]</summary>
+            <div class="profile-fullbody">
+              <img src="${p.fullImg}" alt="${p.nameKr} 전신 이미지">
+              <p class="profile-caption">${p.fullCaption}</p>
+            </div>
+          </details>
+        </td>
+      </tr>` : ''}
+      <tr><th class="profile-label">이름</th><td class="profile-value">${p.nameKr}</td></tr>
+      <tr><th class="profile-label">나이</th><td class="profile-value">${p.age}</td></tr>
+      <tr><th class="profile-label">성별</th><td class="profile-value">${p.gender}</td></tr>
+      <tr><th class="profile-label">신체</th><td class="profile-value">${p.body}</td></tr>
+      <tr><th class="profile-label">생일</th><td class="profile-value">${p.birthday}</td></tr>
+      <tr><th class="profile-label">주소</th><td class="profile-value">${p.address}</td></tr>
+      <tr><th class="profile-label">종족</th><td class="profile-value">${p.race}</td></tr>
+      <tr><th class="profile-label">직업</th><td class="profile-value">${p.job}</td></tr>
+      <tr><th class="profile-label">가족</th><td class="profile-value">${p.family}</td></tr>
+    </tbody>
+  </table>
+
+  <nav class="dream-toc" aria-label="목차">
+    <strong>목차</strong>
+${toc}
+  </nav>
+
+  <div class="dream-wiki-clear"></div>
+</div>
+
+<!-- ==================================================
+     프로필 영역 끝
+================================================== -->
+
+<style>
+.character-setting-wrap {
+  --quote-background: ${C.quoteBg};
+  --quote-line: ${C.quoteLine};
+  --text-color: ${C.text};
+  --subtext-color: ${C.subtext};
+  --title-color: ${C.title};
+  --divider-color: ${C.divider};
+  --link-color: #087ed1;
+  --heart-color: #f08bab;
+  width: 100%;
+  margin: 20px 0;
+  color: var(--text-color);
+  font-size: 16px;
+  line-height: 1.9;
+  box-sizing: border-box;
+}
+.character-setting-wrap *, .character-setting-wrap *::before, .character-setting-wrap *::after { box-sizing: border-box; }
+.character-setting-wrap .setting-section { margin: 0; }
+.character-setting-wrap .story-quote {
+  margin: 0 0 26px; padding: 24px 28px;
+  background: var(--quote-background); border: 0; border-left: 5px solid var(--quote-line);
+  color: var(--subtext-color) !important; font-size: 1em; font-style: normal; line-height: 1.9;
+  word-break: keep-all; overflow-wrap: break-word;
+}
+.character-setting-wrap .story-quote p { margin: 0; padding: 0; color: var(--subtext-color) !important; }
+.character-setting-wrap .story-description { margin: 0; padding: 0; color: var(--text-color); font-size: 1em; line-height: 2; word-break: keep-all; overflow-wrap: break-word; }
+.character-setting-wrap .footnote { position: relative; display: inline-block; vertical-align: baseline; }
+.character-setting-wrap .footnote-number {
+  display: inline; padding: 0; border: 0; background: transparent;
+  color: var(--link-color); font-family: inherit; font-size: 0.8em; line-height: 1; vertical-align: super; cursor: pointer;
+}
+.character-setting-wrap .footnote-content {
+  position: absolute; z-index: 100; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%);
+  display: none; width: max-content; max-width: min(360px, 80vw); padding: 12px 14px;
+  background: ${C.footBg}; border: 1px solid ${C.footBorder}; border-radius: 7px; box-shadow: 0 4px 16px ${C.footShadow};
+  color: ${C.footText}; font-size: 14px; font-weight: 400; line-height: 1.65; text-align: left;
+  word-break: keep-all; overflow-wrap: break-word; white-space: normal;
+}
+.character-setting-wrap .footnote-content::before {
+  content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  border-width: 7px; border-style: solid; border-color: ${C.footBorder} transparent transparent transparent;
+}
+.character-setting-wrap .footnote-content::after {
+  content: ""; position: absolute; left: 50%; top: calc(100% - 1px); transform: translateX(-50%);
+  border-width: 6px; border-style: solid; border-color: ${C.footBg} transparent transparent transparent;
+}
+.character-setting-wrap .footnote:hover .footnote-content,
+.character-setting-wrap .footnote:focus-within .footnote-content { display: block; }
+@media screen and (max-width: 600px) {
+  .character-setting-wrap { font-size: 15px; line-height: 1.85; }
+  .character-setting-wrap .story-quote { padding: 19px 18px; border-left-width: 4px; }
+  .character-setting-wrap .footnote-content {
+    position: fixed; left: 50%; right: auto; bottom: 24px; width: calc(100vw - 36px); max-width: 420px; transform: translateX(-50%);
+  }
+  .character-setting-wrap .footnote-content::before, .character-setting-wrap .footnote-content::after { display: none; }
+}
+.character-setting-wrap .character-personality-section { margin-top: 38px; }
+.character-setting-wrap .personality-subsection { margin: 0 0 42px; }
+.character-setting-wrap .personality-subsection:last-child { margin-bottom: 0; }
+.character-setting-wrap .personality-subtitle {
+  margin: 0 0 22px; padding: 0; color: var(--title-color); font-size: 1.25em; font-weight: 700; line-height: 1.5; word-break: keep-all;
+}
+.character-setting-wrap.category-list-section .personality-subtitle { margin: 0 0 14px; color: #E25A86; font-size: 1.05em; }
+.character-setting-wrap .personality-detail-list { margin: 0; padding-left: 1.7em; color: var(--text-color); font-size: 1em; line-height: 2; word-break: keep-all; overflow-wrap: break-word; }
+.character-setting-wrap .personality-detail-list > li { margin: 0; padding-left: 0.25em; }
+.character-setting-wrap .personality-detail-list > li + li { margin-top: 30px; }
+.character-setting-wrap .personality-detail-list > li::marker { color: var(--text-color); font-size: 0.85em; }
+.character-setting-wrap .personality-detail-title { display: block; margin: 0 0 5px; color: var(--text-color); font-weight: 700; }
+.character-setting-wrap .personality-detail-list p { margin: 0; padding: 0; color: var(--text-color); font-size: 1em; line-height: 2; word-break: keep-all; overflow-wrap: break-word; }
+.character-setting-wrap .character-personality-section .personality-detail-title,
+.character-setting-wrap.category-list-section .personality-detail-title {
+  display: inline; margin: 0;
+}
+.character-setting-wrap .story-description,
+.character-setting-wrap .character-personality-section .personality-detail-list > li,
+.character-setting-wrap.tight-list-section .personality-detail-list > li,
+.character-setting-wrap.category-list-section .personality-detail-list > li {
+  font-size: 0.94em; line-height: 1.82;
+}
+.character-setting-wrap.tight-list-section .personality-detail-list > li + li,
+.character-setting-wrap.category-list-section .personality-detail-list > li + li {
+  margin-top: 4px;
+}
+
+/* =========================================
+   세로형 캐릭터 연표
+========================================= */
+.my-char-timeline {
+  --timeline-line: ${C.tlLine};
+  --timeline-dot: ${C.tlDot};
+  --timeline-text: ${C.tlText};
+  --timeline-subtext: ${C.tlSubtext};
+  --timeline-box: ${C.tlBox};
+  --timeline-box-line: ${C.tlBoxLine};
+  --timeline-link: #087ed1;
+  position: relative; max-width: 760px; margin: 20px auto 40px; color: var(--timeline-text); font-size: 0.96em; box-sizing: border-box;
+}
+.my-char-timeline::before { content: ""; position: absolute; top: 0; bottom: 0; left: 16px; width: 2px; background: var(--timeline-line); }
+.my-char-timeline .my-tl-item { position: relative; padding-left: 46px; margin-bottom: 38px; box-sizing: border-box; }
+.my-char-timeline .my-tl-item:last-child { margin-bottom: 0; }
+.my-char-timeline .my-tl-dot {
+  position: absolute; top: 10px; left: 16px; width: 8px; height: 8px; transform: translateX(-50%);
+  border: 2px solid var(--timeline-dot); border-radius: 50%; background: ${C.tlDotBg}; box-sizing: border-box; z-index: 2;
+}
+.my-char-timeline .my-tl-item:nth-child(2) .my-tl-dot { width: 10px; height: 10px; }
+.my-char-timeline .my-tl-item:last-child .my-tl-dot { width: 14px; height: 14px; background: var(--timeline-dot); }
+.my-char-timeline .my-tl-header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; min-height: 28px; }
+.my-char-timeline .my-tl-year { font-size: 0.85em; color: ${C.tlYear}; }
+.my-char-timeline .my-tl-title { font-size: 1em; font-weight: 700; color: var(--timeline-text); }
+.my-char-timeline .my-tl-summary { margin-top: 6px; font-size: 0.9em; line-height: 1.65; color: var(--timeline-subtext); white-space: pre-line; overflow-wrap: anywhere; }
+.my-char-timeline .my-tl-content {
+  margin-top: 12px; padding: 14px; background: var(--timeline-box); border-left: 3px solid var(--timeline-box-line);
+  font-size: 0.9em; line-height: 1.75; color: ${C.tlContent}; box-sizing: border-box; white-space: pre-line; overflow-wrap: anywhere;
+}
+@media screen and (max-width: 600px) {
+  .my-char-timeline { margin: 16px auto 32px; font-size: 0.93em; }
+  .my-char-timeline .my-tl-item { margin-bottom: 32px; padding-left: 42px; }
+  .my-char-timeline .my-tl-content { padding: 12px; }
+}
+</style>
+${body}
+`;
+
+  document.getElementById('output').value = code;
+}
+
+function copyOutput() {
+  const el = document.getElementById('output');
+  el.select();
+  document.execCommand('copy');
+}
+
+// -------------------- 자동 저장 (localStorage) --------------------
+
+const PROFILE_FIELD_KEYS = ['nameKr','nameEn','mainImg','mainCaption','fullImg','fullCaption','age','gender','body','birthday','address','race','job','family'];
+const STORAGE_KEY = 'profileGenerator_autosave_v1';
+let saveTimer = null;
+
+function saveToStorage() {
+  try {
+    const profile = {};
+    PROFILE_FIELD_KEYS.forEach(k => {
+      const el = document.getElementById('p_' + k);
+      if (el) profile[k] = el.value;
+    });
+    const modeEl = document.querySelector('input[name=mode]:checked');
+    const data = {
+      profile,
+      mode: modeEl ? modeEl.value : 'dark',
+      dividerOn: document.getElementById('dividerOn').checked,
+      dividerColor: document.getElementById('dividerColor').value,
+      sections: state.sections
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const st = document.getElementById('autosaveStatus');
+    if (st) {
+      st.textContent = '저장됨 (' + new Date().toLocaleTimeString('ko-KR') + ')';
+    }
+  } catch (e) { /* 저장 실패 시 조용히 무시 */ }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveToStorage, 500);
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    PROFILE_FIELD_KEYS.forEach(k => {
+      const el = document.getElementById('p_' + k);
+      if (el && data.profile && typeof data.profile[k] === 'string') el.value = data.profile[k];
+    });
+    if (data.mode === 'light') document.getElementById('mode_light').checked = true;
+    else document.getElementById('mode_dark').checked = true;
+    document.getElementById('dividerOn').checked = !!data.dividerOn;
+    if (data.dividerColor) document.getElementById('dividerColor').value = data.dividerColor;
+    if (Array.isArray(data.sections) && data.sections.length > 0) {
+      state.sections = data.sections;
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function resetStorage() {
+  if (!confirm('저장된 모든 입력 내용을 지울까요? 이 작업은 되돌릴 수 없어요.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+// 입력창에 뭔가 입력할 때마다 자동 저장 (0.5초 후, 타이핑이 잠시 멈추면 저장)
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.closest && e.target.closest('#appWrap')) {
+    scheduleSave();
+  }
+});
+
+// pre-fill defaults + mode change auto-toggles divider default
+document.getElementById('mode_dark').addEventListener('change', () => {
+  document.getElementById('dividerOn').checked = false;
+  saveToStorage();
+});
+document.getElementById('mode_light').addEventListener('change', () => {
+  document.getElementById('dividerOn').checked = true;
+  saveToStorage();
+});
+
+// 저장된 내용이 있으면 불러오고, 없으면 기본 8개 섹션 템플릿으로 시작
+const restored = loadFromStorage();
+if (!restored) {
+  ['quote','quote','personality','relationship','timeline','categorylist','categorylist','tightlist'].forEach(t => {
+    state.sections.push({ id: uid(), type: t, anchor: '', data: defaultSectionData(t) });
+  });
+}
+renderSections();
+</script>
+
+</body>
+</html>
