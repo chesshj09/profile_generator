@@ -738,8 +738,8 @@ function buildGallerySection(sec, i) {
   ).join('\n    ');
 
   const perSlideCSS = n > 1 ? imgsSafe.map((img, k) =>
-    `#${gid}-r${k + 1}:checked ~ .location-gallery .location-slide-${k + 1} { display: block; }\n#${gid}-r${k + 1}:checked ~ .location-dots .location-dot-${k + 1} { background: #E25A86; }`
-  ).join('\n') : `.location-slide-1 { display: block; }`;
+    `#${gid}-r${k + 1}:checked ~ .location-gallery .${gid}-slide-${k + 1} { display: block; }\n#${gid}-r${k + 1}:checked ~ .location-dots .${gid}-dot-${k + 1} { background: #E25A86; }`
+  ).join('\n') : `.${gid}-slide-1 { display: block; }`;
 
   const slides = imgsSafe.map((img, k) => {
     const prev = k === 0 ? n : k;
@@ -749,7 +749,7 @@ function buildGallerySection(sec, i) {
         <label for="${gid}-r${next}" class="location-arrow next">&#8250;</label>` : '';
     const caption = img.caption ? `<p class="location-slide-caption">${img.caption}</p>` : '';
     return `
-      <div class="location-slide location-slide-${k + 1}">
+      <div class="location-slide ${gid}-slide-${k + 1}">
         <img src="${img.url}" alt="${img.caption || sec.data.title || ''}">
         ${caption}${arrows}
       </div>`;
@@ -757,7 +757,7 @@ function buildGallerySection(sec, i) {
 
   const dots = n > 1 ? `
     <div class="location-dots">
-      ${imgsSafe.map((img, k) => `<label for="${gid}-r${k + 1}" class="location-dot location-dot-${k + 1}"></label>`).join('')}
+      ${imgsSafe.map((img, k) => `<label for="${gid}-r${k + 1}" class="location-dot ${gid}-dot-${k + 1}"></label>`).join('')}
     </div>` : '';
 
   const desc = sec.data.description ? `<p class="location-desc">${sec.data.description}</p>` : '';
@@ -1065,7 +1065,6 @@ ${toc}
 .character-setting-wrap .location-radio { display: none; }
 .character-setting-wrap .location-gallery { position: relative; border-radius: 10px; overflow: hidden; }
 .character-setting-wrap .location-slide { display: none; width: 100%; aspect-ratio: 16 / 9; position: relative; }
-.character-setting-wrap .location-slide-1 { display: block; }
 .character-setting-wrap .location-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .character-setting-wrap .location-slide-caption {
   position: absolute; left: 0; right: 0; bottom: 0; margin: 0;
@@ -1084,7 +1083,7 @@ ${toc}
 .character-setting-wrap .location-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
 .character-setting-wrap .location-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--quote-line); cursor: pointer; }
 .character-setting-wrap .location-desc {
-  margin: 18px 0 0; font-size: 0.94em; line-height: 1.82; color: var(--text-color);
+  margin: 28px 0 0; font-size: 0.94em; line-height: 1.82; color: var(--text-color);
   word-break: keep-all; overflow-wrap: break-word;
 }
 .character-setting-wrap .location-info { margin-top: 18px; border-top: 1px solid var(--divider-color); padding-top: 16px; }
