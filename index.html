@@ -234,6 +234,12 @@
       &nbsp;·&nbsp;
       <a href="#" onclick="resetStorage();return false;" style="color:#a3355a;">저장된 내용 초기화</a>
     </div>
+    <div style="margin-top:12px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+      <button class="secondary" onclick="exportJSON()">📥 JSON 파일로 저장</button>
+      <button class="secondary" onclick="document.getElementById('jsonImportInput').click()">📤 JSON 파일 불러오기</button>
+      <input type="file" id="jsonImportInput" accept="application/json,.json" style="display:none;" onchange="importJSONFile(event)">
+    </div>
+    <div class="hint" style="text-align:center; margin-top:4px;">지금까지 입력한 내용을 파일로 저장해두면, 다른 컴퓨터에서도 그 파일을 불러와서 이어서 작업할 수 있어요.</div>
   </div>
 
   <div class="panel">
@@ -1187,27 +1193,45 @@ function copyFootnote() {
   document.execCommand('copy');
 }
 
-// -------------------- 자동 저장 (localStorage) --------------------
+// -------------------- 자동 저장 (localStorage) + JSON 내보내기/불러오기 --------------------
 
 const PROFILE_FIELD_KEYS = ['nameKr','nameEn','mainImg','mainCaption','fullImg','fullCaption','age','gender','body','birthday','address','race','job','family'];
 const STORAGE_KEY = 'profileGenerator_autosave_v1';
 let saveTimer = null;
 
+function collectState() {
+  const profile = {};
+  PROFILE_FIELD_KEYS.forEach(k => {
+    const el = document.getElementById('p_' + k);
+    if (el) profile[k] = el.value;
+  });
+  const modeEl = document.querySelector('input[name=mode]:checked');
+  return {
+    profile,
+    mode: modeEl ? modeEl.value : 'dark',
+    dividerOn: document.getElementById('dividerOn').checked,
+    dividerColor: document.getElementById('dividerColor').value,
+    sections: state.sections
+  };
+}
+
+function applyState(data) {
+  PROFILE_FIELD_KEYS.forEach(k => {
+    const el = document.getElementById('p_' + k);
+    if (el && data.profile && typeof data.profile[k] === 'string') el.value = data.profile[k];
+  });
+  if (data.mode === 'light') document.getElementById('mode_light').checked = true;
+  else document.getElementById('mode_dark').checked = true;
+  document.getElementById('dividerOn').checked = !!data.dividerOn;
+  if (data.dividerColor) document.getElementById('dividerColor').value = data.dividerColor;
+  if (Array.isArray(data.sections) && data.sections.length > 0) {
+    state.sections = data.sections;
+  }
+}
+
 function saveToStorage() {
   try {
-    const profile = {};
-    PROFILE_FIELD_KEYS.forEach(k => {
-      const el = document.getElementById('p_' + k);
-      if (el) profile[k] = el.value;
-    });
-    const modeEl = document.querySelector('input[name=mode]:checked');
-    const data = {
-      profile,
-      mode: modeEl ? modeEl.value : 'dark',
-      dividerOn: document.getElementById('dividerOn').checked,
-      dividerColor: document.getElementById('dividerColor').value,
-      sections: state.sections
-    };
+    const data = collectState();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     const st = document.getElementById('autosaveStatus');
     if (st) {
@@ -1225,18 +1249,7 @@ function loadFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
-    const data = JSON.parse(raw);
-    PROFILE_FIELD_KEYS.forEach(k => {
-      const el = document.getElementById('p_' + k);
-      if (el && data.profile && typeof data.profile[k] === 'string') el.value = data.profile[k];
-    });
-    if (data.mode === 'light') document.getElementById('mode_light').checked = true;
-    else document.getElementById('mode_dark').checked = true;
-    document.getElementById('dividerOn').checked = !!data.dividerOn;
-    if (data.dividerColor) document.getElementById('dividerColor').value = data.dividerColor;
-    if (Array.isArray(data.sections) && data.sections.length > 0) {
-      state.sections = data.sections;
-    }
+    applyState(JSON.parse(raw));
     return true;
   } catch (e) {
     return false;
@@ -1247,6 +1260,38 @@ function resetStorage() {
   if (!confirm('저장된 모든 입력 내용을 지울까요? 이 작업은 되돌릴 수 없어요.')) return;
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
+}
+
+function exportJSON() {
+  const data = collectState();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const name = (data.profile.nameKr || data.profile.nameEn || 'character').trim() || 'character';
+  a.href = url;
+  a.download = name + '_profile.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importJSONFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      applyState(data);
+      renderSections();
+      alert('불러오기 완료! 아래 폼에 내용이 채워졌어요.');
+    } catch (err) {
+      alert('파일을 읽지 못했어요. 이 도구에서 내보낸 JSON 파일이 맞는지 확인해주세요.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 // 입력창에 뭔가 입력할 때마다 자동 저장 (0.5초 후, 타이핑이 잠시 멈추면 저장)
