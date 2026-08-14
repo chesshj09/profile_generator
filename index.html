@@ -1021,35 +1021,35 @@ ${toc}
 }
 .character-setting-wrap .story-quote p { margin: 0; padding: 0; color: var(--subtext-color) !important; }
 .character-setting-wrap .story-description { margin: 0; padding: 0; color: var(--text-color); font-size: 1em; line-height: 2; word-break: keep-all; overflow-wrap: break-word; }
-.character-setting-wrap .footnote { position: relative; display: inline-block; vertical-align: baseline; }
-.character-setting-wrap .footnote-number {
+.footnote { position: relative; display: inline-block; vertical-align: baseline; }
+.footnote-number {
   display: inline; padding: 0; border: 0; background: transparent;
-  color: var(--link-color); font-family: inherit; font-size: 0.8em; line-height: 1; vertical-align: super; cursor: pointer;
+  color: #087ed1; font-family: inherit; font-size: 0.8em; line-height: 1; vertical-align: super; cursor: pointer;
 }
-.character-setting-wrap .footnote-content {
+.footnote-content {
   position: absolute; z-index: 100; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%);
   display: none; width: max-content; max-width: min(360px, 80vw); padding: 12px 14px;
   background: ${C.footBg}; border: 1px solid ${C.footBorder}; border-radius: 7px; box-shadow: 0 4px 16px ${C.footShadow};
   color: ${C.footText}; font-size: 14px; font-weight: 400; line-height: 1.65; text-align: left;
   word-break: keep-all; overflow-wrap: break-word; white-space: normal;
 }
-.character-setting-wrap .footnote-content::before {
+.footnote-content::before {
   content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
   border-width: 7px; border-style: solid; border-color: ${C.footBorder} transparent transparent transparent;
 }
-.character-setting-wrap .footnote-content::after {
+.footnote-content::after {
   content: ""; position: absolute; left: 50%; top: calc(100% - 1px); transform: translateX(-50%);
   border-width: 6px; border-style: solid; border-color: ${C.footBg} transparent transparent transparent;
 }
-.character-setting-wrap .footnote:hover .footnote-content,
-.character-setting-wrap .footnote:focus-within .footnote-content { display: block; }
+.footnote:hover .footnote-content,
+.footnote:focus-within .footnote-content { display: block; }
 @media screen and (max-width: 600px) {
   .character-setting-wrap { font-size: 15px; line-height: 1.85; }
   .character-setting-wrap .story-quote { padding: 19px 18px; border-left-width: 4px; }
-  .character-setting-wrap .footnote-content {
+  .footnote-content {
     position: fixed; left: 50%; right: auto; bottom: 24px; width: calc(100vw - 36px); max-width: 420px; transform: translateX(-50%);
   }
-  .character-setting-wrap .footnote-content::before, .character-setting-wrap .footnote-content::after { display: none; }
+  .footnote-content::before, .footnote-content::after { display: none; }
 }
 .character-setting-wrap .character-personality-section { margin-top: 38px; }
 .character-setting-wrap .personality-subsection { margin: 0 0 42px; }
@@ -1109,7 +1109,7 @@ ${toc}
 .character-setting-wrap .location-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
 .character-setting-wrap .location-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--quote-line); cursor: pointer; }
 .character-setting-wrap .location-desc {
-  margin: 31px 0 0 !important; font-size: 0.94em; line-height: 1.82; color: var(--text-color);
+  margin: 13px 0 0 !important; font-size: 0.94em; line-height: 1.82; color: var(--text-color);
   word-break: keep-all; overflow-wrap: break-word;
 }
 .character-setting-wrap .location-info { margin-top: 18px; border-top: 1px solid var(--divider-color); padding-top: 16px; }
