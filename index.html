@@ -197,6 +197,21 @@
     <div class="hint">번호는 직접 관리해주세요 — 같은 섹션 안에서는 1, 2, 3... 순서로, 다른 섹션에서는 다시 1부터 시작해도 괜찮아요. "위치 텍스트" 뒤에 각주 표시가 붙는 형태로 코드가 만들어져요.</div>
   </div>
 
+  <!-- 취소선 만들기 도구 -->
+  <div class="panel">
+    <h2>취소선 만들기 도구</h2>
+    <div class="field full">
+      <label>취소선을 그을 문장</label>
+      <textarea id="st_text" placeholder="예: 사실 백연은 원래 천사였다"></textarea>
+    </div>
+    <div class="add-row"><button onclick="buildStrike()">취소선 코드 만들기</button></div>
+    <div class="field full" style="margin-top:10px;">
+      <label>완성된 코드 (아래 어떤 입력창이든, 원하는 위치에 그대로 붙여넣으세요)</label>
+      <textarea id="st_output" readonly style="height:60px;"></textarea>
+    </div>
+    <div class="add-row"><button class="secondary" onclick="copyStrike()">복사하기</button></div>
+  </div>
+
   <!-- 모드 설정 -->
   <div class="panel">
     <h2>모드 / 구분선 설정</h2>
@@ -222,6 +237,7 @@
         <option value="categorylist">분류별 목록 (선물 / 영화·간식 형식)</option>
         <option value="tightlist">짧은 목록 (여담 형식)</option>
         <option value="gallery">장소 사진 갤러리 (화살표로 넘기기)</option>
+        <option value="note">쪽지 (다른 캐릭터의 평가·기록)</option>
       </select>
       <button onclick="addSection()">+ 섹션 추가</button>
     </div>
@@ -290,6 +306,8 @@ function defaultSectionData(type) {
       return { title: '', items: [{ label: '', content: '' }] };
     case 'gallery':
       return { title: '', images: [{ url: '', caption: '' }], description: '', infoOn: false, infoItems: [{ label: '', content: '' }] };
+    case 'note':
+      return { title: '', items: [{ content: '' }] };
   }
 }
 
@@ -297,7 +315,8 @@ const typeLabel = {
   quote: '인용문 + 설명', personality: '굵은 항목명 + 설명 목록',
   relationship: '인물별 긴 설명', timeline: '세로 연표',
   categorylist: '분류별 목록', tightlist: '짧은 목록',
-  gallery: '장소 사진 갤러리 (화살표로 넘기기)'
+  gallery: '장소 사진 갤러리 (화살표로 넘기기)',
+  note: '쪽지 (다른 캐릭터의 평가·기록)'
 };
 
 function addSection() {
@@ -400,6 +419,13 @@ function sectionCardHTML(sec, i) {
       <div id="gal-info-${i}"></div>
     `;
   }
+  if (sec.type === 'note') {
+    inner += `
+      <div id="note-items-${i}"></div>
+      <div class="add-row"><button class="tiny" onclick="addNoteItem(${i})">+ 쪽지 추가</button></div>
+      <div class="hint">보통 1~2개만 있어도 괜찮아요. 누가 썼는지는 표시되지 않아요.</div>
+    `;
+  }
 
   return inner;
 }
@@ -414,6 +440,7 @@ function afterRenderNested() {
     if (sec.type === 'categorylist') renderCat(i);
     if (sec.type === 'tightlist') renderTight(i);
     if (sec.type === 'gallery') renderGallery(i);
+    if (sec.type === 'note') renderNoteItems(i);
   });
 }
 
@@ -575,6 +602,20 @@ function removeGalImage(i, j) { state.sections[i].data.images.splice(j, 1); if (
 function addGalInfo(i) { state.sections[i].data.infoItems.push({ label: '', content: '' }); renderSections(); }
 function removeGalInfo(i, j) { state.sections[i].data.infoItems.splice(j, 1); renderSections(); }
 
+function renderNoteItems(i) {
+  const el = document.getElementById(`note-items-${i}`);
+  if (!el) return;
+  el.innerHTML = state.sections[i].data.items.map((it, j) => `
+    <div class="item-block">
+      <label>쪽지 내용 ${j + 1}</label>
+      <textarea style="min-height:80px;" oninput="state.sections[${i}].data.items[${j}].content=this.value">${esc(it.content)}</textarea>
+      <div class="add-row"><button class="tiny danger" onclick="removeNoteItem(${i},${j})">이 쪽지 삭제</button></div>
+    </div>
+  `).join('');
+}
+function addNoteItem(i) { state.sections[i].data.items.push({ content: '' }); renderSections(); }
+function removeNoteItem(i, j) { state.sections[i].data.items.splice(j, 1); if (state.sections[i].data.items.length === 0) state.sections[i].data.items.push({ content: '' }); renderSections(); }
+
 function esc(s) { return (s || '').replace(/"/g, '&quot;'); }
 
 // override renderSections to also render nested lists + autosave each time
@@ -609,7 +650,8 @@ const COLORS = {
     title: '#FFFFFF', divider: '#44424f',
     footBg: '#262430', footBorder: '#4a4a55', footShadow: 'rgba(0,0,0,0.35)', footText: '#FFFFFF',
     tlLine: '#44424f', tlDot: '#a9a6b8', tlText: '#FFFFFF', tlSubtext: '#d5d3dd',
-    tlBox: '#35303F', tlBoxLine: '#B7B2CC', tlDotBg: '#262430', tlYear: '#b5b2c2', tlContent: '#EDEDF2'
+    tlBox: '#35303F', tlBoxLine: '#B7B2CC', tlDotBg: '#262430', tlYear: '#b5b2c2', tlContent: '#EDEDF2',
+    noteBg: '#4B4658', noteText: '#E7E4EE', noteTape: 'rgba(255,255,255,0.10)', noteShadow: 'rgba(0,0,0,0.45)', noteLine: '#847F92'
   },
   light: {
     profileDark: '#F5F5F5', profileDarkText: '#222222',
@@ -619,7 +661,8 @@ const COLORS = {
     title: '#333333', divider: '#dddddd',
     footBg: '#ffffff', footBorder: '#d9d9d9', footShadow: 'rgba(0,0,0,0.12)', footText: '#444444',
     tlLine: '#e5e5e5', tlDot: '#777', tlText: '#444', tlSubtext: '#777',
-    tlBox: '#f5f5f5', tlBoxLine: '#4b4241', tlDotBg: '#ffffff', tlYear: '#888', tlContent: '#555'
+    tlBox: '#f5f5f5', tlBoxLine: '#4b4241', tlDotBg: '#ffffff', tlYear: '#888', tlContent: '#555',
+    noteBg: '#EDE7D8', noteText: '#4a3f30', noteTape: 'rgba(0,0,0,0.06)', noteShadow: 'rgba(0,0,0,0.22)', noteLine: '#b8ac93'
   }
 };
 
@@ -820,6 +863,25 @@ ${perSlideCSS}
 `;
 }
 
+function buildNoteSection(sec, i) {
+  const angles = [-2, 1.5, -1.5, 2, -1];
+  const notes = sec.data.items.filter(it => it.content).map((it, k) => `
+    <div class="wiki-note" style="transform: rotate(${angles[k % angles.length]}deg);">
+      <span class="wiki-note-tape"></span>
+      <p class="wiki-note-text">${it.content}</p>
+      <span class="wiki-note-rule"></span>
+    </div>`).join('');
+  return `
+<div class="character-setting-wrap">
+  <section class="setting-section">
+${buildHeading(sec, i)}
+    <div class="wiki-note-wrap">${notes}
+    </div>
+  </section>
+</div>
+`;
+}
+
 function generateCode() {
   const mode = document.querySelector('input[name=mode]:checked').value;
   const dividerOn = document.getElementById('dividerOn').checked;
@@ -850,6 +912,7 @@ function generateCode() {
     else if (sec.type === 'categorylist') body += buildCategoryListSection(sec, i, 'category-list-section');
     else if (sec.type === 'tightlist') body += buildTightListSection(sec, i, 'tight-list-section');
     else if (sec.type === 'gallery') body += buildGallerySection(sec, i);
+    else if (sec.type === 'note') body += buildNoteSection(sec, i);
   });
 
   const code = `<!-- ==================================================
@@ -1024,10 +1087,10 @@ ${toc}
 .character-setting-wrap .story-quote {
   margin: 0 0 26px; padding: 24px 28px;
   background: var(--quote-background); border: 0; border-left: 5px solid var(--quote-line);
-  color: var(--subtext-color) !important; font-size: 1em; font-style: normal; line-height: 1.9;
+  color: var(--subtext-color) !important; font-size: 1em; font-style: italic !important; line-height: 1.9;
   word-break: keep-all; overflow-wrap: break-word;
 }
-.character-setting-wrap .story-quote p { margin: 0; padding: 0; color: var(--subtext-color) !important; }
+.character-setting-wrap .story-quote p { margin: 0; padding: 0; color: var(--subtext-color) !important; font-style: italic !important; }
 .character-setting-wrap .story-description { margin: 0; padding: 0; color: var(--text-color); font-size: 1em; line-height: 2; word-break: keep-all; overflow-wrap: break-word; }
 .footnote { position: relative; display: inline-block; vertical-align: baseline; }
 .footnote-number {
@@ -1131,6 +1194,32 @@ ${toc}
 }
 
 /* =========================================
+   쪽지 (다른 캐릭터의 기록)
+========================================= */
+.character-setting-wrap .wiki-note-wrap { padding: 12px 4px; display: flex; flex-direction: column; gap: 24px; }
+.character-setting-wrap .wiki-note {
+  position: relative;
+  background: ${C.noteBg};
+  border-radius: 2px;
+  padding: 26px 28px 30px;
+  box-shadow: 0 10px 22px ${C.noteShadow}, 0 2px 6px ${C.noteShadow};
+  max-width: 480px;
+}
+.character-setting-wrap .wiki-note-tape {
+  position: absolute; top: -13px; left: 38%; width: 56px; height: 20px;
+  background: ${C.noteTape}; transform: rotate(-4deg);
+}
+.character-setting-wrap .wiki-note-text {
+  margin: 0; color: ${C.noteText}; font-size: 15px; line-height: 1.95;
+  font-family: Georgia, 'Nanum Myeongjo', serif;
+  word-break: keep-all; overflow-wrap: break-word;
+}
+.character-setting-wrap .wiki-note-rule { display: block; margin-top: 16px; width: 32px; height: 1px; background: ${C.noteLine}; }
+@media screen and (max-width: 600px) {
+  .character-setting-wrap .wiki-note { padding: 20px 20px 24px; max-width: 100%; }
+}
+
+/* =========================================
    세로형 캐릭터 연표
 ========================================= */
 .my-char-timeline {
@@ -1189,6 +1278,19 @@ function buildFootnote() {
 function copyFootnote() {
   const el = document.getElementById('fn_output');
   if (!el.value) buildFootnote();
+  el.select();
+  document.execCommand('copy');
+}
+
+function buildStrike() {
+  const text = document.getElementById('st_text').value || '';
+  const snippet = `<span style="text-decoration: line-through;">${text}</span>`;
+  document.getElementById('st_output').value = snippet;
+}
+
+function copyStrike() {
+  const el = document.getElementById('st_output');
+  if (!el.value) buildStrike();
   el.select();
   document.execCommand('copy');
 }
