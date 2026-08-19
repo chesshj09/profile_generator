@@ -297,7 +297,7 @@ function defaultSectionData(type) {
     case 'personality':
       return { title: '', items: [{ title: '', content: '' }] };
     case 'relationship':
-      return { title: '', items: [{ title: '', paragraphs: [''] }] };
+      return { title: '', items: [{ title: '', paragraphs: [''], simple: false }] };
     case 'timeline':
       return { title: '', events: [{ year: '', label: '', summary: '', content: '' }] };
     case 'categorylist':
@@ -479,20 +479,29 @@ function renderRel(i) {
   if (!el) return;
   el.innerHTML = state.sections[i].data.items.map((it, j) => `
     <div class="item-block">
+      <label class="inline" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <input type="checkbox" ${it.simple ? 'checked' : ''} onchange="state.sections[${i}].data.items[${j}].simple=this.checked; renderSections()">
+        간단하게 (이름: 내용, 한 줄로)
+      </label>
       <label>인물명 / 소제목</label>
       <input type="text" value="${esc(it.title)}" oninput="state.sections[${i}].data.items[${j}].title=this.value">
+      ${it.simple ? `
+      <label style="margin-top:6px;">내용</label>
+      <input type="text" value="${esc(it.paragraphs[0] || '')}" oninput="state.sections[${i}].data.items[${j}].paragraphs[0]=this.value">
+      ` : `
       ${it.paragraphs.map((p, k) => `
         <label style="margin-top:6px;">설명 문단 ${k + 1}</label>
         <textarea oninput="state.sections[${i}].data.items[${j}].paragraphs[${k}]=this.value">${esc(p)}</textarea>
       `).join('')}
+      `}
       <div class="add-row">
-        <button class="tiny secondary" onclick="addRelPara(${i},${j})">+ 문단 추가</button>
+        ${it.simple ? '' : `<button class="tiny secondary" onclick="addRelPara(${i},${j})">+ 문단 추가</button>`}
         <button class="tiny danger" onclick="removeRelItem(${i},${j})">이 인물 삭제</button>
       </div>
     </div>
   `).join('');
 }
-function addRelItem(i) { state.sections[i].data.items.push({ title: '', paragraphs: [''] }); renderSections(); }
+function addRelItem(i) { state.sections[i].data.items.push({ title: '', paragraphs: [''], simple: false }); renderSections(); }
 function removeRelItem(i, j) { state.sections[i].data.items.splice(j, 1); renderSections(); }
 function addRelPara(i, j) { state.sections[i].data.items[j].paragraphs.push(''); renderSections(); }
 
@@ -713,6 +722,13 @@ ${buildHeading(sec, i)}
 
 function buildRelationshipSection(sec, i) {
   const items = sec.data.items.map(it => {
+    if (it.simple) {
+      return `
+    <li class="relationship-inline-item">
+      <strong class="relationship-inline-name">${it.title}:</strong>
+      ${it.paragraphs[0] || ''}
+    </li>`;
+    }
     const paras = it.paragraphs.map((p, k) => k === 0
       ? `\n      <p>\n        ${p}\n      </p>`
       : `\n      <br>\n      <p style="margin-top: 16px;">\n        ${p}\n      </p>`).join('');
@@ -1153,6 +1169,7 @@ ${toc}
 .character-setting-wrap .relationship-section .personality-detail-list p {
   font-size: 0.94em; line-height: 1.82;
 }
+.character-setting-wrap .relationship-inline-name { font-weight: 700; }
 
 /* =========================================
    장소 사진 갤러리
