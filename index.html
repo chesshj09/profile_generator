@@ -212,6 +212,28 @@
     <div class="add-row"><button class="secondary" onclick="copyStrike()">복사하기</button></div>
   </div>
 
+  <!-- 링크 만들기 도구 -->
+  <div class="panel">
+    <h2>링크 만들기 도구</h2>
+    <div class="row">
+      <div class="field">
+        <label>링크를 걸 문구 (예: 백연에릴 작중 행적)</label>
+        <input type="text" id="lk_text" placeholder="예: 백연에릴 작중 행적">
+      </div>
+      <div class="field">
+        <label>이동할 주소 (URL)</label>
+        <input type="text" id="lk_url" placeholder="https://...">
+      </div>
+    </div>
+    <div class="add-row"><button onclick="buildLink()">링크 코드 만들기</button></div>
+    <div class="field full" style="margin-top:10px;">
+      <label>완성된 코드 (아래 어떤 입력창이든, 원하는 위치에 그대로 붙여넣으세요)</label>
+      <textarea id="lk_output" readonly style="height:70px;"></textarea>
+    </div>
+    <div class="add-row"><button class="secondary" onclick="copyLink()">복사하기</button></div>
+    <div class="hint">문구는 파란색, 밑줄 없이 표시되고 클릭하면 새 탭에서 열려요.</div>
+  </div>
+
   <!-- 모드 설정 -->
   <div class="panel">
     <h2>모드 / 구분선 설정</h2>
@@ -493,6 +515,24 @@ function renderRel(i) {
         <label style="margin-top:6px;">설명 문단 ${k + 1}</label>
         <textarea oninput="state.sections[${i}].data.items[${j}].paragraphs[${k}]=this.value">${esc(p)}</textarea>
       `).join('')}
+      <label class="inline" style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+        <input type="checkbox" ${it.imgOn ? 'checked' : ''} onchange="state.sections[${i}].data.items[${j}].imgOn=this.checked; renderSections()">
+        사진 넣기
+      </label>
+      ${it.imgOn ? `
+      <div class="sub-block" style="margin-top:6px;">
+        <label>사진 URL</label>
+        <input type="url" value="${esc(it.imgUrl || '')}" oninput="state.sections[${i}].data.items[${j}].imgUrl=this.value" placeholder="https://...">
+        <label style="margin-top:6px;">캡션 (선택)</label>
+        <input type="text" value="${esc(it.imgCaption || '')}" oninput="state.sections[${i}].data.items[${j}].imgCaption=this.value">
+        <label style="margin-top:6px;">사진 위치</label>
+        <select onchange="state.sections[${i}].data.items[${j}].imgPos=this.value">
+          <option value="top" ${(it.imgPos || 'top') === 'top' ? 'selected' : ''}>맨 위 (이름 위)</option>
+          <option value="bottom" ${it.imgPos === 'bottom' ? 'selected' : ''}>맨 아래 (설명 아래)</option>
+          <option value="left" ${it.imgPos === 'left' ? 'selected' : ''}>왼쪽 (글이 오른쪽으로 감싸요)</option>
+          <option value="right" ${it.imgPos === 'right' ? 'selected' : ''}>오른쪽 (글이 왼쪽으로 감싸요)</option>
+        </select>
+      </div>` : ''}
       `}
       <div class="add-row">
         ${it.simple ? '' : `<button class="tiny secondary" onclick="addRelPara(${i},${j})">+ 문단 추가</button>`}
@@ -732,11 +772,16 @@ function buildRelationshipSection(sec, i) {
     const paras = it.paragraphs.map((p, k) => k === 0
       ? `\n      <p>\n        ${p}\n      </p>`
       : `\n      <br>\n      <p style="margin-top: 16px;">\n        ${p}\n      </p>`).join('');
+    const pos = it.imgPos || 'top';
+    const cap = it.imgCaption ? `<span class="rel-photo-caption">${it.imgCaption}</span>` : '';
+    const photo = (it.imgOn && it.imgUrl)
+      ? `<div class="rel-photo rel-photo-${pos}"><img src="${it.imgUrl}" alt="${it.title}">${cap}</div>`
+      : '';
     return `
     <li>
-      <strong class="personality-detail-title">
+      ${pos === 'bottom' ? '' : photo}<strong class="personality-detail-title">
         ${it.title}
-      </strong>${paras}
+      </strong>${paras}${pos === 'bottom' ? photo : ''}
     </li>`;
   }).join('');
   return `
@@ -1170,6 +1215,16 @@ ${toc}
   font-size: 0.94em; line-height: 1.82;
 }
 .character-setting-wrap .relationship-inline-name { font-weight: 700; }
+.character-setting-wrap .relationship-section .personality-detail-list > li::after { content: ""; display: block; clear: both; }
+.character-setting-wrap .rel-photo img { display: block; width: 100%; height: auto; border-radius: 10px; }
+.character-setting-wrap .rel-photo-caption { display: block; margin-top: 6px; font-size: 12px; text-align: center; color: var(--subtext-color); opacity: 0.8; line-height: 1.5; }
+.character-setting-wrap .rel-photo-top { max-width: 360px; margin: 0 0 12px; }
+.character-setting-wrap .rel-photo-bottom { max-width: 360px; margin: 14px 0 0; }
+.character-setting-wrap .rel-photo-left { float: left; width: 180px; margin: 4px 18px 10px 0; }
+.character-setting-wrap .rel-photo-right { float: right; width: 180px; margin: 4px 0 10px 18px; }
+@media screen and (max-width: 600px) {
+  .character-setting-wrap .rel-photo-left, .character-setting-wrap .rel-photo-right { float: none; width: 100%; max-width: 360px; margin: 0 0 12px; }
+}
 
 /* =========================================
    장소 사진 갤러리
@@ -1312,6 +1367,21 @@ function buildStrike() {
 function copyStrike() {
   const el = document.getElementById('st_output');
   if (!el.value) buildStrike();
+  el.select();
+  document.execCommand('copy');
+}
+
+function buildLink() {
+  const text = document.getElementById('lk_text').value || '';
+  let url = (document.getElementById('lk_url').value || '').trim().replace(/"/g, '%22');
+  if (url && !/^(https?:\/\/|#|\/|mailto:)/i.test(url)) url = 'https://' + url;
+  const snippet = `<a href="${url}" target="_blank" rel="noopener" style="color: #087ed1 !important; text-decoration: none !important;">${text}</a>`;
+  document.getElementById('lk_output').value = snippet;
+}
+
+function copyLink() {
+  const el = document.getElementById('lk_output');
+  if (!el.value) buildLink();
   el.select();
   document.execCommand('copy');
 }
